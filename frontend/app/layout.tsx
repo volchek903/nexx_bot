@@ -1,21 +1,35 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { Exo_2 } from "next/font/google";
+import { Jura, Russo_One } from "next/font/google";
 import Script from "next/script";
 
 import { AppProviders } from "@/lib/app-context";
 
 import "@/styles/globals.css";
 
-const exo = Exo_2({
+const jura = Jura({
   subsets: ["latin", "cyrillic"],
-  variable: "--font-exo",
+  variable: "--font-body",
   weight: ["400", "500", "600", "700"],
 });
 
+const russoOne = Russo_One({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-display",
+  weight: "400",
+});
+
 export const metadata: Metadata = {
-  title: "Nexx Mini App",
-  description: "Telegram Mini App для игровой комнаты Nexx",
+  title: "Nexx Мини-приложение",
+  description: "Мини-приложение Telegram для игровой комнаты Nexx",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+  themeColor: "#0f0f23",
 };
 
 export default function RootLayout({
@@ -28,7 +42,7 @@ export default function RootLayout({
       <head>
         <Script src="https://telegram.org/js/telegram-web-app.js?62" strategy="beforeInteractive" />
       </head>
-      <body className={`${exo.variable} bg-nexx-base text-nexx-text antialiased`}>
+      <body className={`${jura.variable} ${russoOne.variable} bg-nexx-base text-nexx-text antialiased`}>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

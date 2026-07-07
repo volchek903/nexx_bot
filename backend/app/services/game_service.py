@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import Counter
 from dataclasses import dataclass
 
 from fastapi import HTTPException
@@ -21,6 +20,7 @@ from app.utils.weighted_random import weighted_choice
 
 TARGET_WEIGHTS = {5: 15, 10: 35, 15: 35, 20: 10, 25: 5}
 FILLER_WEIGHTS = {5: 20, 10: 35, 15: 30, 20: 10, 25: 5}
+BOARD_CARD_COUNT = 9
 
 
 @dataclass
@@ -72,8 +72,8 @@ def _build_state_response(game: Game, *, force_blocked: bool = False, message: s
     )
 
 
-def _pick_filler_percent(counts: Counter[int], max_counts: dict[int, int]) -> int:
-    available = {percent: weight for percent, weight in FILLER_WEIGHTS.items() if counts[percent] < max_counts[percent]}
+def _pick_filler_percent(counts: dict[int, int], max_counts: dict[int, int]) -> int:
+    available = {percent: weight for percent, weight in FILLER_WEIGHTS.items() if counts.get(percent, 0) < max_counts[percent]}
     if not available:
         fallback = {percent: weight for percent, weight in FILLER_WEIGHTS.items() if percent in (5, 10, 15)}
         return weighted_choice(fallback)
@@ -82,25 +82,63 @@ def _pick_filler_percent(counts: Counter[int], max_counts: dict[int, int]) -> in
 
 def generate_board_layout() -> list[tuple[str, int, int]]:
     target_percent = weighted_choice(TARGET_WEIGHTS)
-    counts = Counter({target_percent: 2})
+    percents = [target_percent, target_percent]
+    counts = {percent: 0 for percent in TARGET_WEIGHTS}
+    counts[target_percent] = 2
     max_counts = {
-        5: 9,
-        10: 9,
-        15: 9,
-        20: 2 if target_percent != 20 else 2,
+        5: BOARD_CARD_COUNT,
+        10: BOARD_CARD_COUNT,
+        15: BOARD_CARD_COUNT,
+        20: 2 if target_percent != 20 else 3,
         25: 1 if target_percent != 25 else 2,
     }
-    percents = [target_percent, target_percent]
 
-    while len(percents) < 9:
+    while len(percents) < BOARD_CARD_COUNT:
         percent = _pick_filler_percent(counts, max_counts)
-        counts[percent] += 1
+        counts[percent] = counts.get(percent, 0) + 1
         percents.append(percent)
+
+    if len(percents) != BOARD_CARD_COUNT:
+        raise ValueError("Invalid board size configuration")
 
     from random import shuffle
 
     shuffle(percents)
     return [(f"card_{position + 1}", position, percent) for position, percent in enumerate(percents)]
+
+
+async def _create_game_for_user(db: AsyncSession, user_id: int) -> Game:
+    game = Game(user_id=user_id, status=GAME_STATUS_IN_PROGRESS)
+    db.add(game)
+    await db.flush()
+
+    for card_key, position, percent in generate_board_layout():
+        db.add(
+            GameCard(
+                game_id=game.id,
+                card_key=card_key,
+                position=position,
+                percent=percent,
+            )
+        )
+
+    await db.commit()
+    refreshed = await get_user_game_snapshot(db, user_id)
+    if refreshed is None:
+        raise HTTPException(status_code=500, detail="Не удалось создать игру.")
+    return refreshed.game
+
+
+async def ensure_user_game_exists(db: AsyncSession, user: User) -> Game:
+    snapshot = await get_user_game_snapshot(db, user.id)
+    if snapshot is not None and (snapshot.discount or len(snapshot.game.cards) == BOARD_CARD_COUNT):
+        return snapshot.game
+
+    if snapshot is not None:
+        await db.delete(snapshot.game)
+        await db.flush()
+
+    return await _create_game_for_user(db, user.id)
 
 
 async def start_or_get_game(db: AsyncSession, user: User) -> StartGameResponse:
@@ -117,25 +155,8 @@ async def start_or_get_game(db: AsyncSession, user: User) -> StartGameResponse:
         state = _build_state_response(snapshot.game)
         return StartGameResponse(**state.model_dump())
 
-    game = Game(user_id=user.id, status=GAME_STATUS_IN_PROGRESS)
-    db.add(game)
-    await db.flush()
-
-    for card_key, position, percent in generate_board_layout():
-        db.add(
-            GameCard(
-                game_id=game.id,
-                card_key=card_key,
-                position=position,
-                percent=percent,
-            )
-        )
-
-    await db.commit()
-    refreshed = await get_user_game_snapshot(db, user.id)
-    if refreshed is None:
-        raise HTTPException(status_code=500, detail="Не удалось создать игру.")
-    state = _build_state_response(refreshed.game)
+    game = await ensure_user_game_exists(db, user)
+    state = _build_state_response(game)
     return StartGameResponse(**state.model_dump())
 
 
@@ -178,10 +199,6 @@ async def open_card(db: AsyncSession, user: User, game_id: int, card_id: str) ->
     if target_card.is_matched or target_card.is_opened:
         raise HTTPException(status_code=409, detail="Эта карточка уже открыта.")
 
-    currently_opened = [card for card in game.cards if card.is_opened and not card.is_matched]
-    if len(currently_opened) >= 2:
-        raise HTTPException(status_code=409, detail="Сейчас нельзя открыть новую карточку.")
-
     target_card.is_opened = True
     target_card.opened_at = utc_now()
     db.add(
@@ -193,7 +210,13 @@ async def open_card(db: AsyncSession, user: User, game_id: int, card_id: str) ->
         )
     )
 
-    if not currently_opened:
+    matching_opened_cards = [
+        card
+        for card in game.cards
+        if card.card_key != target_card.card_key and card.is_opened and not card.is_matched and card.percent == target_card.percent
+    ]
+
+    if not matching_opened_cards:
         await db.commit()
         return OpenCardResponse(
             status=GAME_STATUS_IN_PROGRESS,
@@ -202,19 +225,7 @@ async def open_card(db: AsyncSession, user: User, game_id: int, card_id: str) ->
             discount=None,
         )
 
-    first_card = currently_opened[0]
-    if first_card.percent != target_card.percent:
-        first_card.is_opened = False
-        target_card.is_opened = False
-        await db.commit()
-        return OpenCardResponse(
-            status=GAME_STATUS_IN_PROGRESS,
-            opened_card=OpenedCardSchema(card_id=target_card.card_key, revealed_percent=target_card.percent),
-            match=False,
-            should_close_cards=[first_card.card_key, target_card.card_key],
-            discount=None,
-        )
-
+    first_card = matching_opened_cards[0]
     first_card.is_matched = True
     target_card.is_matched = True
     game.status = GAME_STATUS_COMPLETED

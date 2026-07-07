@@ -14,6 +14,8 @@ import { fetchMe } from "@/lib/api";
 import { getTelegramUser, initializeTelegramWebApp } from "@/lib/telegram";
 import type { MeResponse, TelegramUser } from "@/lib/types";
 
+const LOCAL_DEV_INIT_DATA = "dev-local";
+
 type MiniAppContextValue = {
   initData: string;
   telegramUser: TelegramUser | null;
@@ -32,10 +34,12 @@ export function AppProviders({ children }: PropsWithChildren) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const isLocalDev = typeof window !== "undefined" && window.location.hostname === "localhost";
+
   const refreshMe = async () => {
     if (!initData) {
       setLoading(false);
-      setError("Откройте Mini App внутри Telegram, чтобы продолжить.");
+      setError("Откройте мини-приложение внутри Telegram, чтобы продолжить.");
       return;
     }
 
@@ -55,15 +59,26 @@ export function AppProviders({ children }: PropsWithChildren) {
   useEffect(() => {
     const webApp = initializeTelegramWebApp();
     if (!webApp?.initData) {
+      if (isLocalDev) {
+        setInitData(LOCAL_DEV_INIT_DATA);
+        setTelegramUser({
+          id: 123456789,
+          first_name: "Тест",
+          last_name: "Локальный",
+          username: "nexx_local",
+        });
+        return;
+      }
+
       setTelegramUser(getTelegramUser());
       setLoading(false);
-      setError("Откройте Mini App внутри Telegram, чтобы продолжить.");
+      setError("Откройте мини-приложение внутри Telegram, чтобы продолжить.");
       return;
     }
 
     setInitData(webApp.initData);
     setTelegramUser(getTelegramUser());
-  }, []);
+  }, [isLocalDev]);
 
   useEffect(() => {
     if (!initData) {

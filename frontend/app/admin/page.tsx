@@ -53,12 +53,26 @@ export default function AdminPage() {
     <PageContainer>
       <AdminOnlyGuard isAdmin={me?.is_admin ?? false} loading={appLoading}>
         <div className="space-y-5">
-          <div className="glass-panel p-5">
-            <p className="section-kicker">Nexx Control</p>
+          <div className="hero-panel p-5">
+            <p className="section-kicker">Панель Nexx / аналитика</p>
             <h1 className="font-display text-3xl font-semibold text-white">Админка</h1>
             <p className="mt-2 text-sm text-nexx-muted">
-              Статистика по открытиям Mini App, играм и выданным скидкам.
+              Статистика по открытиям мини-приложения, играм и выданным скидкам.
             </p>
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              <div className="hero-chip">
+                <span className="hero-chip-label">Режим</span>
+                <span className="hero-chip-value">работа</span>
+              </div>
+              <div className="hero-chip">
+                <span className="hero-chip-label">Источник</span>
+                <span className="hero-chip-value">живая база</span>
+              </div>
+              <div className="hero-chip">
+                <span className="hero-chip-label">Фокус</span>
+                <span className="hero-chip-value">акция</span>
+              </div>
+            </div>
           </div>
 
           <AdminStatsCards stats={stats} loading={loading} error={error ?? appError} />

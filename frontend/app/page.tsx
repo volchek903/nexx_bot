@@ -30,11 +30,15 @@ export default function GamePage() {
   const [showRules, setShowRules] = useState(false);
   const [winPercent, setWinPercent] = useState<number | null>(null);
   const mismatchTimer = useRef<number | null>(null);
+  const winTimer = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (mismatchTimer.current) {
         window.clearTimeout(mismatchTimer.current);
+      }
+      if (winTimer.current) {
+        window.clearTimeout(winTimer.current);
       }
     };
   }, []);
@@ -172,8 +176,10 @@ export default function GamePage() {
       }
 
       if (response.status === "completed" && response.discount) {
-        setWinPercent(response.discount.percent);
         await refreshMe();
+        winTimer.current = window.setTimeout(() => {
+          setWinPercent(response.discount?.percent ?? null);
+        }, 900);
       }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Не удалось открыть карточку.");
@@ -188,7 +194,7 @@ export default function GamePage() {
       <div className="space-y-5">
         <LogoHeader
           title="Найди свою скидку"
-          subtitle="Открой карточки Nexx и найди две одинаковые скидки."
+          subtitle="Открой карточки Nexx и забери до 50% скидки на аренду игровой комнаты."
         />
 
         <GameStatus
@@ -202,8 +208,35 @@ export default function GamePage() {
           cards={gameState?.cards ?? []}
           disabled={loadingGame || !!busyCardId || gameState?.status !== "in_progress"}
           busyCardId={busyCardId}
+          status={gameState?.status ?? "not_started"}
           onOpenCard={handleOpenCard}
         />
+
+        <section className="glass-panel p-4 sm:p-5">
+          <div className="mb-3 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="section-kicker">Как играть</p>
+            <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-[0.66rem] uppercase tracking-[0.18em] text-cyan-100">
+              режим акции
+            </span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="info-tile">
+              <span className="info-tile-index">01</span>
+              <p className="info-tile-title">Открывай</p>
+              <p className="info-tile-text">Открой любую карточку и смотри, какой процент скрыт на поле.</p>
+            </div>
+            <div className="info-tile">
+              <span className="info-tile-index">02</span>
+              <p className="info-tile-title">Сравнивай</p>
+              <p className="info-tile-text">Вам нужно угадать, где находятся 2 одинаковые карточки со скидкой.</p>
+            </div>
+            <div className="info-tile">
+              <span className="info-tile-index">03</span>
+              <p className="info-tile-title">Забирай</p>
+              <p className="info-tile-text">Если вам дважды выпадет один и тот же процент, именно эта скидка станет вашим призом.</p>
+            </div>
+          </div>
+        </section>
       </div>
 
       <BottomNavigation isAdmin={me?.is_admin ?? false} />
