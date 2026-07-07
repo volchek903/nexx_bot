@@ -1,0 +1,190 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --nexx-base: #050713;
+  --nexx-base-deep: #080d1f;
+  --nexx-card: #101225;
+  --nexx-card-alt: #17122b;
+  --nexx-cyan: #00b7ff;
+  --nexx-cyan-soft: #37e8ff;
+  --nexx-blue: #2278ff;
+  --nexx-pink: #ff3dce;
+  --nexx-fuchsia: #e033ff;
+  --nexx-purple: #8b35ff;
+  --nexx-text: #f7fbff;
+  --nexx-muted: #9ea7c2;
+  --nexx-shadow: #02030a;
+}
+
+@layer base {
+  * {
+    @apply border-white/10;
+  }
+
+  html {
+    background:
+      radial-gradient(circle at top left, rgba(0, 183, 255, 0.22), transparent 35%),
+      radial-gradient(circle at top right, rgba(255, 61, 206, 0.22), transparent 35%),
+      linear-gradient(180deg, #050713 0%, #080d1f 100%);
+    min-height: 100%;
+  }
+
+  body {
+    min-height: 100vh;
+    font-family: var(--font-exo), sans-serif;
+    color: var(--nexx-text);
+    background: transparent;
+  }
+
+  button {
+    @apply transition duration-200;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background:
+      linear-gradient(160deg, rgba(16, 18, 37, 0.9), rgba(8, 13, 31, 0.94)),
+      rgba(16, 18, 37, 0.9);
+    box-shadow:
+      0 0 24px rgba(0, 183, 255, 0.08),
+      0 0 30px rgba(255, 61, 206, 0.08),
+      inset 0 0 24px rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(18px);
+  }
+
+  .section-kicker {
+    font-family: var(--font-exo), sans-serif;
+    font-size: 0.76rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #9fefff;
+  }
+
+  .font-display {
+    font-family: var(--font-exo), sans-serif;
+  }
+
+  .brand-button {
+    border-radius: 20px;
+    padding: 0.95rem 1.1rem;
+    font-family: var(--font-exo), sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: white;
+    background: linear-gradient(135deg, #00b7ff 0%, #2278ff 35%, #8b35ff 65%, #ff3dce 100%);
+    box-shadow: 0 0 24px rgba(55, 232, 255, 0.22);
+  }
+
+  .secondary-button {
+    border-radius: 20px;
+    padding: 0.95rem 1.1rem;
+    color: white;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 22px;
+    backface-visibility: hidden;
+  }
+
+  .card-back {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background:
+      linear-gradient(135deg, rgba(0, 183, 255, 0.12), rgba(255, 61, 206, 0.12)),
+      #101225;
+    box-shadow:
+      0 0 18px rgba(0, 183, 255, 0.18),
+      0 0 22px rgba(255, 61, 206, 0.14),
+      inset 0 0 18px rgba(255, 255, 255, 0.04);
+  }
+
+  .card-front {
+    transform: rotateY(180deg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(145deg, rgba(23, 18, 43, 0.98), rgba(16, 18, 37, 0.98));
+  }
+
+  .nexx-wordmark {
+    font-family: var(--font-exo), sans-serif;
+    font-size: 1.65rem;
+    font-style: italic;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: linear-gradient(135deg, #37e8ff, #2278ff, #ff3dce);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 14px rgba(0, 183, 255, 0.45);
+  }
+
+  .discount-glow-5 {
+    box-shadow:
+      0 0 18px rgba(0, 183, 255, 0.18),
+      inset 0 0 22px rgba(55, 232, 255, 0.08);
+  }
+
+  .discount-glow-10 {
+    box-shadow:
+      0 0 24px rgba(34, 120, 255, 0.2),
+      inset 0 0 28px rgba(139, 53, 255, 0.08);
+  }
+
+  .discount-glow-15 {
+    box-shadow:
+      0 0 28px rgba(224, 51, 255, 0.2),
+      inset 0 0 28px rgba(255, 61, 206, 0.08);
+  }
+
+  .discount-glow-20 {
+    box-shadow:
+      0 0 34px rgba(255, 61, 206, 0.24),
+      inset 0 0 32px rgba(255, 61, 206, 0.09);
+    animation: pulse-neon 1.8s infinite;
+  }
+
+  .discount-glow-25 {
+    box-shadow:
+      0 0 38px rgba(55, 232, 255, 0.24),
+      0 0 44px rgba(255, 61, 206, 0.18),
+      inset 0 0 34px rgba(255, 255, 255, 0.08);
+    animation: pulse-neon 1.4s infinite;
+  }
+}
+
+@layer utilities {
+  .bg-brand-gradient {
+    background: linear-gradient(135deg, #00b7ff 0%, #2278ff 35%, #8b35ff 65%, #ff3dce 100%);
+  }
+
+  .bg-nexx-base {
+    background-color: var(--nexx-base);
+  }
+
+  .text-nexx-text {
+    color: var(--nexx-text);
+  }
+
+  .text-nexx-muted {
+    color: var(--nexx-muted);
+  }
+}
+
+@keyframes pulse-neon {
+  0%,
+  100% {
+    filter: saturate(1) brightness(1);
+  }
+  50% {
+    filter: saturate(1.15) brightness(1.08);
+  }
+}
