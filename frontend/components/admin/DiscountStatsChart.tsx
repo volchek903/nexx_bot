@@ -13,7 +13,7 @@ export function DiscountStatsChart({ stats, loading }: DiscountStatsChartProps) 
   return (
     <section className="glass-panel p-5">
       <div className="mb-4">
-        <p className="section-kicker">Distribution</p>
+        <p className="section-kicker">Распределение</p>
         <h2 className="font-display text-2xl font-semibold text-white">Статистика по скидкам</h2>
       </div>
 
@@ -29,7 +29,7 @@ export function DiscountStatsChart({ stats, loading }: DiscountStatsChartProps) 
                   <span className="text-white">{percent}%</span>
                   <span className="text-nexx-muted">{value} чел.</span>
                 </div>
-                <div className="h-3 overflow-hidden rounded-full bg-white/6">
+                <div className="h-3 overflow-hidden rounded-full bg-white/[0.06]">
                   <div
                     className="h-full rounded-full bg-brand-gradient shadow-[0_0_18px_rgba(55,232,255,0.22)]"
                     style={{ width: `${Math.max((value / maxValue) * 100, value ? 14 : 0)}%` }}

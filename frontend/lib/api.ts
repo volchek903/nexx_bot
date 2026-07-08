@@ -16,11 +16,20 @@ async function request<T>(path: string, initData: string, options: RequestInit =
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+      cache: "no-store",
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error && error.message === "Failed to fetch"
+        ? "Не удалось связаться с сервером. Проверьте адрес API и что backend запущен."
+        : "Не удалось выполнить запрос. Проверьте подключение и настройки API.";
+    throw new Error(message);
+  }
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);

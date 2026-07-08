@@ -7,6 +7,7 @@ type TelegramWebApp = {
   };
   ready: () => void;
   expand: () => void;
+  openLink?: (url: string, options?: { try_instant_view?: boolean }) => void;
   enableClosingConfirmation?: () => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
@@ -44,4 +45,16 @@ export function initializeTelegramWebApp(): TelegramWebApp | null {
 
 export function getTelegramUser(): TelegramUser | null {
   return getTelegramWebApp()?.initDataUnsafe.user ?? null;
+}
+
+export function openExternalLink(url: string) {
+  const webApp = getTelegramWebApp();
+  if (webApp?.openLink) {
+    webApp.openLink(url, { try_instant_view: false });
+    return;
+  }
+
+  if (typeof window !== "undefined") {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
 }

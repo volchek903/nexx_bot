@@ -12,7 +12,7 @@ export function AdminOnlyGuard({ isAdmin, loading, children }: AdminOnlyGuardPro
 
   if (!isAdmin) {
     return (
-      <section className="glass-panel p-5">
+      <section className="hero-panel p-5">
         <p className="font-display text-2xl text-white">Доступ запрещен</p>
         <p className="mt-2 text-sm leading-6 text-nexx-muted">
           Эта страница доступна только администраторам Nexx.
