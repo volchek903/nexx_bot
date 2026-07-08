@@ -9,7 +9,6 @@ export function ProfileHeader({ me, telegramUser }: ProfileHeaderProps) {
   const firstName = telegramUser?.first_name ?? me?.first_name ?? "Игрок";
   const username = telegramUser?.username ?? me?.username;
   const avatar = telegramUser?.photo_url ?? me?.photo_url;
-  const isAdmin = me?.is_admin ?? false;
 
   return (
     <section className="hero-panel p-5">
@@ -31,21 +30,6 @@ export function ProfileHeader({ me, telegramUser }: ProfileHeaderProps) {
           <span className="mt-3 inline-flex rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs uppercase tracking-[0.18em] text-violet-100">
             Игрок Nexx
           </span>
-        </div>
-      </div>
-
-      <div className="mt-5 grid grid-cols-3 gap-2">
-        <div className="hero-chip">
-          <span className="hero-chip-label">Статус</span>
-          <span className="hero-chip-value">онлайн</span>
-        </div>
-        <div className="hero-chip">
-          <span className="hero-chip-label">Доступ</span>
-          <span className="hero-chip-value">{isAdmin ? "админ" : "клиент"}</span>
-        </div>
-        <div className="hero-chip">
-          <span className="hero-chip-label">Профиль</span>
-          <span className="hero-chip-value">Telegram</span>
         </div>
       </div>
     </section>

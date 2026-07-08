@@ -3,7 +3,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import MenuButtonWebApp, Message, WebAppInfo
 
 from bot.config import settings
-from bot.keyboards.webapp import discount_webapp_keyboard
+from bot.keyboards.webapp import discount_webapp_keyboard, is_valid_webapp_url
 
 router = Router()
 
@@ -22,11 +22,13 @@ Nexx — это игровая комната для отдыха с друзь�
 
 @router.message(CommandStart())
 async def start_handler(message: Message) -> None:
-    await message.bot.set_chat_menu_button(
-        chat_id=message.chat.id,
-        menu_button=MenuButtonWebApp(
-            text="Открыть игру",
-            web_app=WebAppInfo(url=settings.webapp_url),
-        ),
-    )
+    if is_valid_webapp_url(settings.webapp_url):
+        await message.bot.set_chat_menu_button(
+            chat_id=message.chat.id,
+            menu_button=MenuButtonWebApp(
+                text="Открыть игру",
+                web_app=WebAppInfo(url=settings.webapp_url),
+            ),
+        )
+
     await message.answer(WELCOME_TEXT, reply_markup=discount_webapp_keyboard())

@@ -28,7 +28,7 @@ export function GameBoard({ cards, disabled, busyCardId, status, onOpenCard }: G
       <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="section-kicker">Игровое поле</p>
-          <h2 className="font-display text-[1.65rem] font-semibold text-white min-[390px]:text-2xl">
+          <h2 className="font-display text-[1.65rem] font-semibold tracking-[0.04em] text-white min-[390px]:text-2xl">
             Открой пару
           </h2>
         </div>
