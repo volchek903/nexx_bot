@@ -15,6 +15,8 @@ import { getTelegramUser, initializeTelegramWebApp } from "@/lib/telegram";
 import type { MeResponse, TelegramUser } from "@/lib/types";
 
 const LOCAL_DEV_INIT_DATA = "dev-local";
+const TELEGRAM_CONTEXT_ERROR =
+  "Приложение открыто как обычная ссылка, а не Telegram Mini App. Для игры нужна кнопка WebApp внутри Telegram.";
 
 type MiniAppContextValue = {
   initData: string;
@@ -39,7 +41,7 @@ export function AppProviders({ children }: PropsWithChildren) {
   const refreshMe = async () => {
     if (!initData) {
       setLoading(false);
-      setError("Откройте мини-приложение внутри Telegram, чтобы продолжить.");
+      setError(TELEGRAM_CONTEXT_ERROR);
       return;
     }
 
@@ -72,7 +74,7 @@ export function AppProviders({ children }: PropsWithChildren) {
 
       setTelegramUser(getTelegramUser());
       setLoading(false);
-      setError("Откройте мини-приложение внутри Telegram, чтобы продолжить.");
+      setError(TELEGRAM_CONTEXT_ERROR);
       return;
     }
 

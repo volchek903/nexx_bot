@@ -3,7 +3,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import MenuButtonWebApp, Message, WebAppInfo
 
 from bot.config import settings
-from bot.keyboards.webapp import discount_webapp_keyboard, is_valid_webapp_url
+from bot.keyboards.webapp import discount_webapp_keyboard, get_webapp_url_issue
 
 router = Router()
 
@@ -19,16 +19,25 @@ Nexx — это игровая комната для отдыха с друзь�
 
 Нажмите кнопку ниже и заберите свою скидку 👇"""
 
+CONFIG_ERROR_TEXT = (
+    "⚠️ Мини-приложение сейчас недоступно. Боту нужен публичный HTTPS-адрес приложения, "
+    "иначе Telegram открывает обычную ссылку без данных профиля."
+)
+
 
 @router.message(CommandStart())
 async def start_handler(message: Message) -> None:
-    if is_valid_webapp_url(settings.webapp_url):
-        await message.bot.set_chat_menu_button(
-            chat_id=message.chat.id,
-            menu_button=MenuButtonWebApp(
-                text="Открыть игру",
-                web_app=WebAppInfo(url=settings.webapp_url),
-            ),
-        )
+    webapp_url_issue = get_webapp_url_issue(settings.webapp_url)
+    if webapp_url_issue:
+        await message.answer(f"{WELCOME_TEXT}\n\n{CONFIG_ERROR_TEXT}")
+        return
+
+    await message.bot.set_chat_menu_button(
+        chat_id=message.chat.id,
+        menu_button=MenuButtonWebApp(
+            text="Открыть игру",
+            web_app=WebAppInfo(url=settings.webapp_url),
+        ),
+    )
 
     await message.answer(WELCOME_TEXT, reply_markup=discount_webapp_keyboard())

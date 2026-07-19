@@ -9,6 +9,40 @@ import type {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+const LOCAL_API_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
+
+function isLocalHostname(hostname: string): boolean {
+  return LOCAL_API_HOSTS.has(hostname) || hostname.startsWith("127.");
+}
+
+function getApiConfigurationError(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  let apiUrl: URL;
+  try {
+    apiUrl = new URL(API_BASE_URL);
+  } catch {
+    return null;
+  }
+
+  const frontendIsLocal = isLocalHostname(window.location.hostname);
+  if (frontendIsLocal) {
+    return null;
+  }
+
+  if (isLocalHostname(apiUrl.hostname)) {
+    return "Фронтенд открыт не локально, но NEXT_PUBLIC_API_URL указывает на localhost. Укажите публичный HTTPS-адрес API.";
+  }
+
+  if (apiUrl.protocol !== "https:") {
+    return "Для Telegram Mini App API должен быть доступен по HTTPS. Обновите NEXT_PUBLIC_API_URL.";
+  }
+
+  return null;
+}
+
 async function request<T>(path: string, initData: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
   headers.set("X-Telegram-Init-Data", initData);
@@ -24,10 +58,12 @@ async function request<T>(path: string, initData: string, options: RequestInit =
       cache: "no-store",
     });
   } catch (error) {
+    const configError = getApiConfigurationError();
     const message =
-      error instanceof Error && error.message === "Failed to fetch"
+      configError ??
+      (error instanceof Error && error.message === "Failed to fetch"
         ? "Не удалось связаться с сервером. Проверьте адрес API и что backend запущен."
-        : "Не удалось выполнить запрос. Проверьте подключение и настройки API.";
+        : "Не удалось выполнить запрос. Проверьте подключение и настройки API.");
     throw new Error(message);
   }
 
