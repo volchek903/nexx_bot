@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -110,19 +111,28 @@ def generate_board_layout() -> list[tuple[str, int, int]]:
 async def _create_game_for_user(db: AsyncSession, user_id: int) -> Game:
     game = Game(user_id=user_id, status=GAME_STATUS_IN_PROGRESS)
     db.add(game)
-    await db.flush()
 
-    for card_key, position, percent in generate_board_layout():
-        db.add(
-            GameCard(
-                game_id=game.id,
-                card_key=card_key,
-                position=position,
-                percent=percent,
+    try:
+        await db.flush()
+
+        for card_key, position, percent in generate_board_layout():
+            db.add(
+                GameCard(
+                    game_id=game.id,
+                    card_key=card_key,
+                    position=position,
+                    percent=percent,
+                )
             )
-        )
 
-    await db.commit()
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        refreshed = await get_user_game_snapshot(db, user_id)
+        if refreshed is not None:
+            return refreshed.game
+        raise
+
     refreshed = await get_user_game_snapshot(db, user_id)
     if refreshed is None:
         raise HTTPException(status_code=500, detail="Не удалось создать игру.")

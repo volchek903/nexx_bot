@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 from aiogram.utils.web_app import safe_parse_webapp_init_data
 from fastapi import Depends, Header, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from app.config import settings
 from app.database import get_db
@@ -25,8 +26,38 @@ class AuthContext:
 LAST_SEEN_UPDATE_INTERVAL = timedelta(seconds=60)
 
 
-def _should_update_last_seen(user: User, now) -> bool:
-    return user.last_seen_at is None or now - user.last_seen_at >= LAST_SEEN_UPDATE_INTERVAL
+def _normalize_utc_datetime(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
+def _should_update_last_seen(user: User, now: datetime) -> bool:
+    last_seen_at = _normalize_utc_datetime(user.last_seen_at)
+    return last_seen_at is None or now - last_seen_at >= LAST_SEEN_UPDATE_INTERVAL
+
+
+async def _commit_user_changes(
+    db: AsyncSession,
+    *,
+    should_commit: bool,
+    telegram_id: int,
+    init_data: str,
+    existing: User,
+) -> AuthContext:
+    if not should_commit:
+        return AuthContext(user=existing, init_data=init_data)
+
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        existing = await db.scalar(select(User).where(User.telegram_id == telegram_id))
+        if existing is None:
+            raise
+    return AuthContext(user=existing, init_data=init_data)
 
 
 async def _get_or_create_local_dev_user(db: AsyncSession) -> AuthContext:
@@ -69,9 +100,13 @@ async def _get_or_create_local_dev_user(db: AsyncSession) -> AuthContext:
             existing.miniapp_opened_at = now
             should_commit = True
 
-    if should_commit:
-        await db.commit()
-    return AuthContext(user=existing, init_data="dev-local")
+    return await _commit_user_changes(
+        db,
+        should_commit=should_commit,
+        telegram_id=dev_telegram_id,
+        init_data="dev-local",
+        existing=existing,
+    )
 
 
 async def get_auth_context(
@@ -135,9 +170,13 @@ async def get_auth_context(
             existing.miniapp_opened_at = now
             should_commit = True
 
-    if should_commit:
-        await db.commit()
-    return AuthContext(user=existing, init_data=telegram_init_data)
+    return await _commit_user_changes(
+        db,
+        should_commit=should_commit,
+        telegram_id=telegram_user.id,
+        init_data=telegram_init_data,
+        existing=existing,
+    )
 
 
 async def require_admin(auth: AuthContext = Depends(get_auth_context)) -> AuthContext:
