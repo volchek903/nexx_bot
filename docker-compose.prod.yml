@@ -25,7 +25,7 @@ services:
 
   frontend:
     build: ./frontend
-    command: sh -c "npm run build && npm run start"
+    command: sh -c "npm run build && HOSTNAME=0.0.0.0 PORT=3000 node .next/standalone/server.js"
     env_file:
       - .env
     ports:

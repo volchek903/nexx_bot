@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher
+from aiogram.exceptions import TelegramNetworkError
 from aiogram.types import MenuButtonWebApp, WebAppInfo
 
 from bot.config import settings
@@ -20,9 +21,12 @@ async def main() -> None:
     try:
         webapp_url_issue = get_webapp_url_issue(settings.webapp_url)
         if webapp_url_issue is None:
-            await bot.set_chat_menu_button(
-                menu_button=MenuButtonWebApp(text="Открыть игру", web_app=WebAppInfo(url=settings.webapp_url))
-            )
+            try:
+                await bot.set_chat_menu_button(
+                    menu_button=MenuButtonWebApp(text="Открыть игру", web_app=WebAppInfo(url=settings.webapp_url))
+                )
+            except TelegramNetworkError:
+                logger.warning("Failed to set Telegram WebApp menu button because Telegram API timed out.")
         else:
             message = f"Invalid Telegram WebApp URL: {webapp_url_issue}. Current WEBAPP_URL={settings.webapp_url!r}"
             if settings.app_env == "production":

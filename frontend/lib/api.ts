@@ -15,32 +15,39 @@ function isLocalHostname(hostname: string): boolean {
   return LOCAL_API_HOSTS.has(hostname) || hostname.startsWith("127.");
 }
 
-function getApiConfigurationError(): string | null {
+function buildApiUrl(baseUrl: string, path: string): string {
+  const normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  if (normalizedBaseUrl.endsWith("/api") && normalizedPath.startsWith("/api/")) {
+    return `${normalizedBaseUrl}${normalizedPath.slice(4)}`;
+  }
+
+  return `${normalizedBaseUrl}${normalizedPath}`;
+}
+
+function resolveApiBaseUrl(): string {
   if (typeof window === "undefined") {
-    return null;
+    return API_BASE_URL;
   }
 
   let apiUrl: URL;
   try {
     apiUrl = new URL(API_BASE_URL);
   } catch {
-    return null;
+    return API_BASE_URL;
   }
 
   const frontendIsLocal = isLocalHostname(window.location.hostname);
   if (frontendIsLocal) {
-    return null;
+    return API_BASE_URL;
   }
 
-  if (isLocalHostname(apiUrl.hostname)) {
-    return "Фронтенд открыт не локально, но NEXT_PUBLIC_API_URL указывает на localhost. Укажите публичный HTTPS-адрес API.";
+  if (isLocalHostname(apiUrl.hostname) || apiUrl.protocol !== "https:") {
+    return window.location.origin;
   }
 
-  if (apiUrl.protocol !== "https:") {
-    return "Для Telegram Mini App API должен быть доступен по HTTPS. Обновите NEXT_PUBLIC_API_URL.";
-  }
-
-  return null;
+  return API_BASE_URL;
 }
 
 async function request<T>(path: string, initData: string, options: RequestInit = {}): Promise<T> {
@@ -50,20 +57,19 @@ async function request<T>(path: string, initData: string, options: RequestInit =
     headers.set("Content-Type", "application/json");
   }
 
+  const apiBaseUrl = resolveApiBaseUrl();
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(buildApiUrl(apiBaseUrl, path), {
       ...options,
       headers,
       cache: "no-store",
     });
   } catch (error) {
-    const configError = getApiConfigurationError();
     const message =
-      configError ??
-      (error instanceof Error && error.message === "Failed to fetch"
+      error instanceof Error && error.message === "Failed to fetch"
         ? "Не удалось связаться с сервером. Проверьте адрес API и что backend запущен."
-        : "Не удалось выполнить запрос. Проверьте подключение и настройки API.");
+        : "Не удалось выполнить запрос. Проверьте подключение и настройки API.";
     throw new Error(message);
   }
 
