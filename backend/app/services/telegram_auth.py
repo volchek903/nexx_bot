@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import timedelta
 
 from aiogram.utils.web_app import safe_parse_webapp_init_data
 from fastapi import Depends, Header, HTTPException
@@ -8,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models.user import User
-from app.services.game_service import ensure_user_game_exists
 from app.utils.security import utc_now
 
 
@@ -22,10 +22,18 @@ class AuthContext:
     init_data: str
 
 
+LAST_SEEN_UPDATE_INTERVAL = timedelta(seconds=60)
+
+
+def _should_update_last_seen(user: User, now) -> bool:
+    return user.last_seen_at is None or now - user.last_seen_at >= LAST_SEEN_UPDATE_INTERVAL
+
+
 async def _get_or_create_local_dev_user(db: AsyncSession) -> AuthContext:
     dev_telegram_id = settings.admin_tg_ids[0] if settings.admin_tg_ids else 123456789
     existing = await db.scalar(select(User).where(User.telegram_id == dev_telegram_id))
     now = utc_now()
+    should_commit = False
 
     if existing is None:
         existing = User(
@@ -39,18 +47,30 @@ async def _get_or_create_local_dev_user(db: AsyncSession) -> AuthContext:
             miniapp_opened_at=now,
         )
         db.add(existing)
+        should_commit = True
     else:
-        existing.first_name = "Local"
-        existing.last_name = "Tester"
-        existing.username = "nexx_local"
-        existing.is_admin = dev_telegram_id in settings.admin_tg_ids
-        existing.last_seen_at = now
+        if existing.first_name != "Local":
+            existing.first_name = "Local"
+            should_commit = True
+        if existing.last_name != "Tester":
+            existing.last_name = "Tester"
+            should_commit = True
+        if existing.username != "nexx_local":
+            existing.username = "nexx_local"
+            should_commit = True
+        is_admin = dev_telegram_id in settings.admin_tg_ids
+        if existing.is_admin != is_admin:
+            existing.is_admin = is_admin
+            should_commit = True
+        if _should_update_last_seen(existing, now):
+            existing.last_seen_at = now
+            should_commit = True
         if existing.miniapp_opened_at is None:
             existing.miniapp_opened_at = now
+            should_commit = True
 
-    await db.commit()
-    await db.refresh(existing)
-    await ensure_user_game_exists(db, existing)
+    if should_commit:
+        await db.commit()
     return AuthContext(user=existing, init_data="dev-local")
 
 
@@ -77,6 +97,7 @@ async def get_auth_context(
 
     is_admin = telegram_user.id in settings.admin_tg_ids
     now = utc_now()
+    should_commit = False
 
     if existing is None:
         existing = User(
@@ -90,19 +111,32 @@ async def get_auth_context(
             miniapp_opened_at=now,
         )
         db.add(existing)
+        should_commit = True
     else:
-        existing.first_name = telegram_user.first_name
-        existing.last_name = telegram_user.last_name
-        existing.username = telegram_user.username
-        existing.photo_url = telegram_user.photo_url
-        existing.is_admin = is_admin
-        existing.last_seen_at = now
+        if existing.first_name != telegram_user.first_name:
+            existing.first_name = telegram_user.first_name
+            should_commit = True
+        if existing.last_name != telegram_user.last_name:
+            existing.last_name = telegram_user.last_name
+            should_commit = True
+        if existing.username != telegram_user.username:
+            existing.username = telegram_user.username
+            should_commit = True
+        if existing.photo_url != telegram_user.photo_url:
+            existing.photo_url = telegram_user.photo_url
+            should_commit = True
+        if existing.is_admin != is_admin:
+            existing.is_admin = is_admin
+            should_commit = True
+        if _should_update_last_seen(existing, now):
+            existing.last_seen_at = now
+            should_commit = True
         if existing.miniapp_opened_at is None:
             existing.miniapp_opened_at = now
+            should_commit = True
 
-    await db.commit()
-    await db.refresh(existing)
-    await ensure_user_game_exists(db, existing)
+    if should_commit:
+        await db.commit()
     return AuthContext(user=existing, init_data=telegram_init_data)
 
 

@@ -7,6 +7,12 @@ services:
     environment:
       APP_ENV: production
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).read()"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     volumes:
       - ./backend/data:/app/data
     ports:
@@ -23,15 +29,18 @@ services:
     volumes:
       - ./backend/data:/app/data
     depends_on:
-      - backend-api
+      backend-api:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
-    command: sh -c "npm run build && HOSTNAME=0.0.0.0 PORT=3000 node .next/standalone/server.js"
     env_file:
       - .env
+    environment:
+      APP_ENV: production
     restart: unless-stopped
     ports:
       - "3000:3000"
     depends_on:
-      - backend-api
+      backend-api:
+        condition: service_healthy

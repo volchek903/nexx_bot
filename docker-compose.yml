@@ -20,7 +20,9 @@ services:
       - backend-api
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      target: dev
     command: npm run dev
     env_file:
       - .env

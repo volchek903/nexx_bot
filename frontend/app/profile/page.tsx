@@ -17,10 +17,15 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (appLoading || !initData) {
-      if (!appLoading) {
-        setLoading(false);
-      }
+    if (initData || appLoading) {
+      return;
+    }
+
+    setLoading(false);
+  }, [appLoading, initData]);
+
+  useEffect(() => {
+    if (!initData) {
       return;
     }
 
@@ -46,7 +51,7 @@ export default function ProfilePage() {
     return () => {
       mounted = false;
     };
-  }, [appLoading, initData]);
+  }, [initData]);
 
   return (
     <PageContainer>

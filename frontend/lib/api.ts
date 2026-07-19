@@ -8,6 +8,7 @@ import type {
 } from "@/lib/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const REQUEST_TIMEOUT_MS = 8000;
 
 const LOCAL_API_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
 
@@ -58,19 +59,26 @@ async function request<T>(path: string, initData: string, options: RequestInit =
   }
 
   const apiBaseUrl = resolveApiBaseUrl();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let response: Response;
   try {
     response = await fetch(buildApiUrl(apiBaseUrl, path), {
       ...options,
       headers,
       cache: "no-store",
+      signal: controller.signal,
     });
   } catch (error) {
     const message =
-      error instanceof Error && error.message === "Failed to fetch"
-        ? "Не удалось связаться с сервером. Проверьте адрес API и что backend запущен."
-        : "Не удалось выполнить запрос. Проверьте подключение и настройки API.";
+      error instanceof DOMException && error.name === "AbortError"
+        ? "Сервер отвечает слишком долго. Попробуйте ещё раз через несколько секунд."
+        : error instanceof Error && error.message === "Failed to fetch"
+          ? "Не удалось связаться с сервером. Проверьте адрес API и что backend запущен."
+          : "Не удалось выполнить запрос. Проверьте подключение и настройки API.";
     throw new Error(message);
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   if (!response.ok) {

@@ -44,10 +44,15 @@ export default function GamePage() {
   }, []);
 
   useEffect(() => {
-    if (appLoading || !initData) {
-      if (!appLoading) {
-        setLoadingGame(false);
-      }
+    if (initData || appLoading) {
+      return;
+    }
+
+    setLoadingGame(false);
+  }, [appLoading, initData]);
+
+  useEffect(() => {
+    if (!initData) {
       return;
     }
 
@@ -79,9 +84,10 @@ export default function GamePage() {
     return () => {
       mounted = false;
     };
-  }, [appLoading, initData]);
+  }, [initData]);
 
   const lockedPercent = useMemo(() => gameState?.discount?.percent ?? null, [gameState?.discount?.percent]);
+  const statusError = useMemo(() => error ?? (gameState ? null : appError), [appError, error, gameState]);
 
   const syncState = async () => {
     if (!initData) {
@@ -176,7 +182,7 @@ export default function GamePage() {
       }
 
       if (response.status === "completed" && response.discount) {
-        await refreshMe();
+        void refreshMe();
         winTimer.current = window.setTimeout(() => {
           setWinPercent(response.discount?.percent ?? null);
         }, 900);
@@ -200,7 +206,7 @@ export default function GamePage() {
         <GameStatus
           loading={loadingGame}
           status={gameState?.status ?? "not_started"}
-          error={error ?? appError}
+          error={statusError}
           discountPercent={lockedPercent}
         />
 
