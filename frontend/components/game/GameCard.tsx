@@ -152,7 +152,7 @@ export function GameCard({ card, celebrationActive, disabled, busy, onClick }: G
           transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
           className="relative h-full w-full [transform-style:preserve-3d]"
         >
-          <div className="card-face card-back">
+          <div className={`card-face card-back ${faceUp ? "card-face-hidden" : "card-face-visible"}`}>
             <div className="absolute inset-0 bg-[linear-gradient(145deg,transparent_0%,rgba(55,232,255,0.06)_100%)]" />
             <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(135deg,transparent_0%,transparent_35%,rgba(55,232,255,0.08)_35%,rgba(55,232,255,0.08)_37%,transparent_37%,transparent_100%)]" />
             <motion.div
@@ -185,7 +185,9 @@ export function GameCard({ card, celebrationActive, disabled, busy, onClick }: G
             </motion.div>
           </div>
 
-          <div className={`card-face card-front ${percentGlowClass(card.revealed_percent)}`}>
+          <div
+            className={`card-face card-front ${faceUp ? "card-face-visible" : "card-face-hidden"} ${percentGlowClass(card.revealed_percent)}`}
+          >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(55,232,255,0.16),transparent_45%)]" />
             {matchedCelebration ? (
               <div className="pointer-events-none absolute inset-0 rounded-[22px] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.18),transparent_34%),radial-gradient(circle_at_center,rgba(0,232,255,0.18),transparent_60%)]" />

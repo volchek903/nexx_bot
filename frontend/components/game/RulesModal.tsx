@@ -14,7 +14,6 @@ export function RulesModal({ onStart }: RulesModalProps) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         className="glass-panel max-h-[min(86dvh,720px)] w-full max-w-[430px] overflow-y-auto p-5 sm:p-6"
       >
-        <div className="brand-domain brand-domain-compact mx-auto mb-4">nexx.by</div>
         <p className="section-kicker text-center">🎮 Правила игры</p>
         <h2 className="mt-2 text-center font-display text-[2rem] font-semibold text-white sm:text-3xl">
           Найди пару
