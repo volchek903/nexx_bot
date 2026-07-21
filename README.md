@@ -45,7 +45,7 @@ docker compose up --build
 Сервисы:
 
 - `backend-api` на `http://localhost:8000`
-- `frontend` на `http://localhost:3000`
+- `frontend` на `http://localhost:2023`
 - `backend-bot` запускается как `python -m bot.main`
 
 SQLite сохраняется между рестартами через volume:
@@ -121,7 +121,7 @@ DATABASE_URL=sqlite+aiosqlite:///./data/nexx_game.sqlite3
 ADMIN_TG_IDS=123456789,987654321
 JWT_SECRET=change_me
 APP_ENV=development
-CORS_ORIGINS=http://localhost:3000,https://your-mini-app-domain.com
+CORS_ORIGINS=http://localhost:2023,https://your-mini-app-domain.com
 DISCOUNT_EXPIRES_DAYS=
 ```
 

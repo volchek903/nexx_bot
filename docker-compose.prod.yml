@@ -40,7 +40,7 @@ services:
       APP_ENV: production
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "2023:3000"
     depends_on:
       backend-api:
         condition: service_healthy
