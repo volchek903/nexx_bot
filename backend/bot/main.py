@@ -20,6 +20,11 @@ async def main() -> None:
     dispatcher.include_router(start_router)
 
     try:
+        try:
+            await bot.delete_webhook(drop_pending_updates=False)
+        except TelegramNetworkError:
+            logger.warning("Failed to clear Telegram webhook because Telegram API timed out.")
+
         while True:
             webapp_url_issue = get_webapp_url_issue(settings.webapp_url)
             if webapp_url_issue is None:
