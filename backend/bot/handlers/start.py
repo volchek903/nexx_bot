@@ -1,28 +1,36 @@
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.filters import CommandStart
-from aiogram.types import MenuButtonWebApp, Message, WebAppInfo
+from aiogram.types import CallbackQuery, MenuButtonWebApp, Message, WebAppInfo
 
 from bot.config import settings
-from bot.keyboards.webapp import discount_webapp_keyboard, get_webapp_url_issue
+from bot.keyboards.webapp import BOOK_ROOM_CALLBACK, discount_webapp_keyboard, get_webapp_url_issue
 
 router = Router()
 
 WELCOME_TEXT = """🎮 Добро пожаловать в Nexx!
 
-Nexx — это игровая комната для отдыха с друзьями, дней рождения, PS5, караоке и ярких вечеров.
+Здесь вас ждёт мини-игра от игровой комнаты Nexx: откройте карточки, найдите пару одинаковых процентов и получите свою персональную скидку на бронь.
 
-Мы приготовили для вас мини-игру, в которой можно выиграть персональную скидку на бронь комнаты.
+Скидка сразу закрепится за вашим Telegram-профилем, а шанс на игру даётся только один раз.
 
-Откройте карточки Nexx, найдите две одинаковые скидки — и ваш приз сразу закрепится за Telegram-профилем 🎁
-
-Играть можно только один раз, поэтому испытайте удачу внимательно.
-
-Нажмите кнопку ниже и заберите свою скидку 👇"""
+Нажмите кнопку ниже и попробуйте выиграть свой процент 👇"""
 
 CONFIG_ERROR_TEXT = (
     "⚠️ Мини-приложение сейчас недоступно. Боту нужен публичный HTTPS-адрес приложения, "
     "иначе Telegram открывает обычную ссылку без данных профиля."
 )
+
+BOOKING_TEXT = """✨ Забронируем для вас лучший формат отдыха в Nexx
+
+Хотите провести вечер с друзьями, устроить день рождения, корпоратив или просто красиво отдохнуть? Напишите нам в <a href="https://t.me/nexx_book">@nexx_book</a> — подберём комнату, расскажем по свободным слотам и поможем быстро оформить бронь.
+
+Что поможем сделать:
+• подобрать удобное время;
+• сориентировать по форматам отдыха;
+• ответить на вопросы по бронированию;
+• быстро закрепить за вами комнату.
+
+Напишите в <a href="https://t.me/nexx_book">@nexx_book</a> — всё подскажем и организуем 👌"""
 
 
 @router.message(CommandStart())
@@ -35,9 +43,16 @@ async def start_handler(message: Message) -> None:
     await message.bot.set_chat_menu_button(
         chat_id=message.chat.id,
         menu_button=MenuButtonWebApp(
-            text="Открыть игру",
+            text="Сыграть",
             web_app=WebAppInfo(url=settings.webapp_url),
         ),
     )
 
     await message.answer(WELCOME_TEXT, reply_markup=discount_webapp_keyboard())
+
+
+@router.callback_query(F.data == BOOK_ROOM_CALLBACK)
+async def book_room_callback(callback: CallbackQuery) -> None:
+    if callback.message is not None:
+        await callback.message.answer(BOOKING_TEXT, parse_mode="HTML", disable_web_page_preview=True)
+    await callback.answer("Открыли информацию по бронированию")

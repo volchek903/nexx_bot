@@ -5,6 +5,8 @@ from bot.config import settings
 
 
 LOCAL_WEBAPP_HOSTS = {"localhost", "0.0.0.0", "::1"}
+BOOK_ROOM_CALLBACK = "book_room"
+NEXX_SITE_URL = "https://nexx.by"
 
 
 def get_webapp_url_issue(url: str) -> str | None:
@@ -32,9 +34,21 @@ def discount_webapp_keyboard() -> InlineKeyboardMarkup | None:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🎁 Получить скидку",
+                    text="🎮 Сыграть",
                     web_app=WebAppInfo(url=settings.webapp_url),
                 )
-            ]
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🌐 Наш сайт",
+                    url=NEXX_SITE_URL,
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✨ Забронировать комнату",
+                    callback_data=BOOK_ROOM_CALLBACK,
+                )
+            ],
         ]
     )

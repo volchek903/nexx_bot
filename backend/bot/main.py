@@ -30,7 +30,7 @@ async def main() -> None:
             if webapp_url_issue is None:
                 try:
                     await bot.set_chat_menu_button(
-                        menu_button=MenuButtonWebApp(text="Открыть игру", web_app=WebAppInfo(url=settings.webapp_url))
+                        menu_button=MenuButtonWebApp(text="Сыграть", web_app=WebAppInfo(url=settings.webapp_url))
                     )
                 except TelegramNetworkError:
                     logger.warning("Failed to set Telegram WebApp menu button because Telegram API timed out.")
