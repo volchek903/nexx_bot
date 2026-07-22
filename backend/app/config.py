@@ -1,5 +1,6 @@
 from functools import lru_cache
 from typing import Annotated, Any
+from urllib.parse import quote
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -14,6 +15,7 @@ class Settings(BaseSettings):
 
     bot_token: str = Field(alias="BOT_TOKEN")
     telegram_bot_username: str = Field(alias="TELEGRAM_BOT_USERNAME")
+    telegram_proxy: str | None = Field(default=None, alias="TELEGRAM_PROXY")
     webapp_url: str = Field(alias="WEBAPP_URL")
     api_url: str = Field(alias="API_URL")
     database_url: str = Field(alias="DATABASE_URL")
@@ -47,6 +49,33 @@ class Settings(BaseSettings):
         if value in (None, ""):
             return None
         return int(value)
+
+    @field_validator("telegram_proxy", mode="before")
+    @classmethod
+    def parse_telegram_proxy(cls, value: Any) -> str | None:
+        if value in (None, ""):
+            return None
+
+        proxy = str(value).strip()
+        if not proxy:
+            return None
+        if "://" in proxy:
+            return proxy
+
+        parts = proxy.split(":", 3)
+        if len(parts) == 2:
+            host, port = parts
+            return f"http://{host}:{port}"
+        if len(parts) == 4:
+            host, port, username, password = parts
+            return (
+                f"http://{quote(username, safe='')}:{quote(password, safe='')}"
+                f"@{host}:{port}"
+            )
+
+        raise ValueError(
+            "TELEGRAM_PROXY must be a full proxy URL or use host:port[:username:password] format"
+        )
 
 
 @lru_cache(maxsize=1)

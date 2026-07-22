@@ -114,6 +114,7 @@ npm run dev
 ```env
 BOT_TOKEN=telegram_bot_token
 TELEGRAM_BOT_USERNAME=NexxBot
+TELEGRAM_PROXY=
 WEBAPP_URL=https://your-mini-app-domain.com
 API_URL=https://your-api-domain.com
 NEXT_PUBLIC_API_URL=https://your-api-domain.com
@@ -126,6 +127,11 @@ DISCOUNT_EXPIRES_DAYS=
 ```
 
 `DISCOUNT_EXPIRES_DAYS` можно оставить пустым. Тогда скидка не истекает автоматически.
+
+`TELEGRAM_PROXY` необязателен. Если он задан, прокси используется только ботом для обращений к Telegram Bot API. Поддерживаются два формата:
+
+- полный URL, например `http://user:password@host:port`
+- сокращённый формат `host:port:user:password`
 
 ## Миграции Alembic
 

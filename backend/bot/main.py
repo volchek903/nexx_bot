@@ -1,8 +1,10 @@
 import asyncio
 import logging
 from typing import Awaitable, Callable
+from urllib.parse import urlsplit, urlunsplit
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.exceptions import TelegramAPIError, TelegramConflictError, TelegramNetworkError
 from aiogram.types import BotCommand, BotCommandScopeAllPrivateChats, MenuButtonWebApp, WebAppInfo
 
@@ -20,6 +22,16 @@ PRIVATE_COMMANDS = [
         description="Открыть приветствие и запустить игру",
     )
 ]
+
+
+def redact_proxy_url(proxy_url: str) -> str:
+    parsed = urlsplit(proxy_url)
+    host = parsed.hostname or ""
+    if parsed.port is not None:
+        host = f"{host}:{parsed.port}"
+    if parsed.username is not None:
+        host = f"***:***@{host}"
+    return urlunsplit((parsed.scheme, host, parsed.path, parsed.query, parsed.fragment))
 
 
 async def call_telegram_with_retries(
@@ -102,7 +114,12 @@ async def main() -> None:
         format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
         force=True,
     )
-    bot = Bot(token=settings.bot_token)
+    session = None
+    if settings.telegram_proxy:
+        session = AiohttpSession(proxy=settings.telegram_proxy)
+        logger.info("Telegram proxy is enabled for bot traffic: %s", redact_proxy_url(settings.telegram_proxy))
+
+    bot = Bot(token=settings.bot_token, session=session)
     dispatcher = Dispatcher()
     dispatcher.include_router(start_router)
 
