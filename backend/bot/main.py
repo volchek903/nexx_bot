@@ -3,7 +3,7 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.exceptions import TelegramNetworkError
-from aiogram.types import MenuButtonWebApp, WebAppInfo
+from aiogram.types import BotCommand, BotCommandScopeAllPrivateChats, MenuButtonWebApp, WebAppInfo
 
 from bot.config import settings
 from bot.handlers.start import router as start_router
@@ -11,6 +11,12 @@ from bot.keyboards.webapp import get_webapp_url_issue
 
 logger = logging.getLogger(__name__)
 RETRY_DELAY_SECONDS = 5
+PRIVATE_COMMANDS = [
+    BotCommand(
+        command="start",
+        description="Открыть приветствие и запустить игру",
+    )
+]
 
 
 async def main() -> None:
@@ -27,6 +33,11 @@ async def main() -> None:
 
         while True:
             webapp_url_issue = get_webapp_url_issue(settings.webapp_url)
+            try:
+                await bot.set_my_commands(PRIVATE_COMMANDS, scope=BotCommandScopeAllPrivateChats())
+            except TelegramNetworkError:
+                logger.warning("Failed to set Telegram bot commands because Telegram API timed out.")
+
             if webapp_url_issue is None:
                 try:
                     await bot.set_chat_menu_button(
