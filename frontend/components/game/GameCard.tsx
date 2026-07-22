@@ -226,7 +226,7 @@ export function GameCard({ card, celebrationActive, disabled, busy, onClick }: G
                 <p className="text-[0.58rem] uppercase tracking-[0.18em] text-cyan-100/80">
                   {matchedCelebration ? "ваш приз" : "скидка"}
                 </p>
-                <span className="mt-1 block font-display text-[2.1rem] font-semibold leading-none text-white min-[390px]:text-[2.3rem]">
+                <span className="mt-1 block font-display text-[1.95rem] font-semibold leading-none text-white min-[390px]:text-[2.15rem]">
                   {card.revealed_percent ?? "?"}%
                 </span>
                 <p className="mt-1 text-[0.58rem] uppercase tracking-[0.18em] text-white/60">аренда Nexx</p>
