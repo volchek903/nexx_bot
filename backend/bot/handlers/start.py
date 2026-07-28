@@ -41,7 +41,8 @@ BOOKING_TEXT = """✨ Забронируем для вас лучший форм
 Напишите в <a href="https://t.me/nexx_book">@nexx_book</a> — всё подскажем и организуем 👌"""
 
 
-@router.message(CommandStart() | F.text.regexp(START_TEXT_RE))
+@router.message(F.text.regexp(START_TEXT_RE))
+@router.message(CommandStart())
 async def start_handler(message: Message) -> None:
     logger.info(
         "Received /start from user_id=%s chat_id=%s username=%s text=%r",
