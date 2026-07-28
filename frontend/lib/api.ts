@@ -1,5 +1,7 @@
 import type {
+  AdminDiscountDeactivationResult,
   AdminStats,
+  AdminUserLookup,
   DiscountsResponse,
   GameStateResponse,
   MeResponse,
@@ -117,4 +119,15 @@ export function fetchMyDiscounts(initData: string) {
 
 export function fetchAdminStats(initData: string) {
   return request<AdminStats>("/api/admin/stats", initData);
+}
+
+export function findAdminUserByUsername(initData: string, username: string) {
+  const params = new URLSearchParams({ username });
+  return request<AdminUserLookup>(`/api/admin/users/by-username?${params.toString()}`, initData);
+}
+
+export function deactivateDiscountsForUser(initData: string, userId: number) {
+  return request<AdminDiscountDeactivationResult>(`/api/admin/users/${userId}/deactivate-discount`, initData, {
+    method: "POST",
+  });
 }

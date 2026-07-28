@@ -79,3 +79,28 @@ export type AdminStats = {
   expired_discounts: number;
   discounts_by_percent: Record<string, number>;
 };
+
+export type AdminUserDiscountSummary = {
+  id: number;
+  percent: number;
+  status: string;
+  created_at: string;
+  expires_at: string | null;
+};
+
+export type AdminUserLookup = {
+  user_id: number;
+  telegram_id: number;
+  first_name: string;
+  last_name: string | null;
+  username: string | null;
+  active_discount_count: number;
+  active_discount: AdminUserDiscountSummary | null;
+};
+
+export type AdminDiscountDeactivationResult = {
+  user_id: number;
+  telegram_id: number;
+  username: string | null;
+  deactivated_discounts: number;
+};

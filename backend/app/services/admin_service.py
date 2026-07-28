@@ -1,10 +1,17 @@
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.discount import DISCOUNT_STATUS_ACTIVE, DISCOUNT_STATUS_EXPIRED, DISCOUNT_STATUS_USED, Discount
 from app.models.game import GAME_STATUS_COMPLETED, Game
 from app.models.user import User
-from app.schemas.admin import AdminDiscountResponse, AdminStatsResponse
+from app.schemas.admin import (
+    AdminDiscountDeactivationResponse,
+    AdminDiscountResponse,
+    AdminStatsResponse,
+    AdminUserDiscountSummaryResponse,
+    AdminUserLookupResponse,
+)
 from app.utils.security import utc_now
 
 
@@ -62,4 +69,84 @@ async def update_discount_status(db: AsyncSession, discount_id: int, status: str
         percent=discount.percent,
         status=discount.status,
         used_at=discount.used_at,
+    )
+
+
+def normalize_admin_username(username: str) -> str:
+    normalized = username.strip().lstrip("@")
+    if not normalized:
+        raise ValueError("Username required")
+    return normalized
+
+
+def _build_discount_summary(discount: Discount) -> AdminUserDiscountSummaryResponse:
+    return AdminUserDiscountSummaryResponse(
+        id=discount.id,
+        percent=discount.percent,
+        status=discount.status,
+        created_at=discount.created_at,
+        expires_at=discount.expires_at,
+    )
+
+
+def _build_user_lookup_response(user: User) -> AdminUserLookupResponse:
+    active_discounts = sorted(
+        (discount for discount in user.discounts if discount.status == DISCOUNT_STATUS_ACTIVE),
+        key=lambda discount: discount.created_at,
+        reverse=True,
+    )
+    latest_active_discount = active_discounts[0] if active_discounts else None
+
+    return AdminUserLookupResponse(
+        user_id=user.id,
+        telegram_id=user.telegram_id,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        username=user.username,
+        active_discount_count=len(active_discounts),
+        active_discount=_build_discount_summary(latest_active_discount) if latest_active_discount is not None else None,
+    )
+
+
+async def find_user_by_username(db: AsyncSession, username: str) -> AdminUserLookupResponse:
+    normalized_username = normalize_admin_username(username)
+
+    users = (
+        await db.scalars(
+            select(User)
+            .options(selectinload(User.discounts))
+            .where(User.username.is_not(None), func.lower(User.username) == normalized_username.lower())
+        )
+    ).all()
+
+    if not users:
+        raise ValueError("User not found")
+    if len(users) > 1:
+        raise ValueError("Username is ambiguous")
+
+    return _build_user_lookup_response(users[0])
+
+
+async def deactivate_user_active_discounts(db: AsyncSession, user_id: int) -> AdminDiscountDeactivationResponse:
+    user = await db.scalar(select(User).options(selectinload(User.discounts)).where(User.id == user_id))
+    if user is None:
+        raise ValueError("User not found")
+
+    active_discounts = [discount for discount in user.discounts if discount.status == DISCOUNT_STATUS_ACTIVE]
+    if not active_discounts:
+        raise ValueError("No active discount")
+
+    expired_at = utc_now()
+    for discount in active_discounts:
+        discount.status = DISCOUNT_STATUS_EXPIRED
+        discount.used_at = None
+        discount.expires_at = expired_at
+
+    await db.commit()
+
+    return AdminDiscountDeactivationResponse(
+        user_id=user.id,
+        telegram_id=user.telegram_id,
+        username=user.username,
+        deactivated_discounts=len(active_discounts),
     )

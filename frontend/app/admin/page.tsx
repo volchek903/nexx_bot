@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { AdminDiscountDeactivation } from "@/components/admin/AdminDiscountDeactivation";
 import { AdminOnlyGuard } from "@/components/admin/AdminOnlyGuard";
 import { AdminStatsCards } from "@/components/admin/AdminStatsCards";
 import { DiscountStatsChart } from "@/components/admin/DiscountStatsChart";
@@ -17,6 +18,19 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  async function loadStats(currentInitData: string) {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetchAdminStats(currentInitData);
+      setStats(response);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Не удалось загрузить статистику.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (appLoading || !initData || !me?.is_admin) {
       if (!appLoading) {
@@ -26,23 +40,12 @@ export default function AdminPage() {
     }
 
     let mounted = true;
-    setLoading(true);
-    fetchAdminStats(initData)
-      .then((response) => {
-        if (mounted) {
-          setStats(response);
-        }
-      })
-      .catch((requestError) => {
-        if (mounted) {
-          setError(requestError instanceof Error ? requestError.message : "Не удалось загрузить статистику.");
-        }
-      })
-      .finally(() => {
-        if (mounted) {
-          setLoading(false);
-        }
-      });
+    void (async () => {
+      if (!mounted) {
+        return;
+      }
+      await loadStats(initData);
+    })();
 
     return () => {
       mounted = false;
@@ -77,6 +80,15 @@ export default function AdminPage() {
 
           <AdminStatsCards stats={stats} loading={loading} error={error ?? appError} />
           <DiscountStatsChart stats={stats} loading={loading} />
+          <AdminDiscountDeactivation
+            initData={initData}
+            onDiscountDeactivated={async () => {
+              if (!initData) {
+                return;
+              }
+              await loadStats(initData);
+            }}
+          />
         </div>
       </AdminOnlyGuard>
 
