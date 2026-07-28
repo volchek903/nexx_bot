@@ -1,4 +1,5 @@
 import logging
+import re
 
 from aiogram import F, Router
 from aiogram.filters import CommandStart
@@ -9,6 +10,10 @@ from bot.keyboards.webapp import BOOK_ROOM_CALLBACK, discount_webapp_keyboard, g
 
 router = Router()
 logger = logging.getLogger(__name__)
+START_TEXT_RE = re.compile(
+    rf"^/start(?:@{re.escape(settings.telegram_bot_username)})?(?:\s+.*)?$",
+    re.IGNORECASE,
+)
 
 WELCOME_TEXT = """🎮 Добро пожаловать в Nexx!
 
@@ -36,13 +41,14 @@ BOOKING_TEXT = """✨ Забронируем для вас лучший форм
 Напишите в <a href="https://t.me/nexx_book">@nexx_book</a> — всё подскажем и организуем 👌"""
 
 
-@router.message(CommandStart())
+@router.message(CommandStart() | F.text.regexp(START_TEXT_RE))
 async def start_handler(message: Message) -> None:
     logger.info(
-        "Received /start from user_id=%s chat_id=%s username=%s",
+        "Received /start from user_id=%s chat_id=%s username=%s text=%r",
         message.from_user.id if message.from_user else None,
         message.chat.id,
         message.from_user.username if message.from_user else None,
+        message.text,
     )
     webapp_url_issue = get_webapp_url_issue(settings.webapp_url)
     if webapp_url_issue:
