@@ -7,15 +7,9 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000 --fetch-timeout=300000
 
-FROM deps AS dev
+FROM deps AS builder
 
 COPY . .
-
-EXPOSE 3000
-
-CMD ["npm", "run", "dev"]
-
-FROM dev AS builder
 
 RUN npm run build
 
@@ -28,10 +22,12 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
+COPY package.json package-lock.json* ./
+COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/next.config.ts ./next.config.ts
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
