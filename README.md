@@ -1,27 +1,93 @@
 # Nexx Telegram Mini App
 
-Telegram Mini App и бот для игровой комнаты Nexx. Стек:
+<div align="center">
+  <img src="./frontend/public/logo.png" alt="Nexx logo" width="96" />
+  <h3>Неоновый Telegram Mini App для игровой комнаты Nexx</h3>
+  <p>
+    Игра на один шанс, персональная скидка на аренду, профиль игрока и админ-панель со статистикой
+    в одном проекте на <code>Next.js</code>, <code>FastAPI</code>, <code>aiogram</code> и <code>SQLite</code>.
+  </p>
+  <p>
+    <code>Next.js 15</code>
+    <code>FastAPI</code>
+    <code>aiogram 3</code>
+    <code>SQLAlchemy 2.0</code>
+    <code>SQLite</code>
+    <code>Docker Compose</code>
+  </p>
+</div>
 
-- `backend/`: FastAPI + SQLAlchemy 2.0 + SQLite + Alembic + aiogram 3
-- `frontend/`: Next.js + React + TypeScript + Tailwind CSS + Framer Motion
-- SQLite хранится в `backend/data/nexx_game.sqlite3`
-- бот и API используют один backend-image
+## Preview
 
-## Структура
+<table>
+  <tr>
+    <td width="33%" align="center" valign="top">
+      <img src="./docs/screenshots/game-screen.png" alt="Экран игры Nexx" width="100%" />
+      <br />
+      <strong>Игра</strong>
+      <br />
+      <sub>3x3 поле, один шанс, живое состояние карточек и акцент на Telegram WebApp UX.</sub>
+    </td>
+    <td width="33%" align="center" valign="top">
+      <img src="./docs/screenshots/profile-screen.png" alt="Профиль и скидка Nexx" width="100%" />
+      <br />
+      <strong>Профиль</strong>
+      <br />
+      <sub>Персональная скидка фиксируется за пользователем и отображается как карточка приза.</sub>
+    </td>
+    <td width="33%" align="center" valign="top">
+      <img src="./docs/screenshots/admin-screen.png" alt="Админка Nexx" width="100%" />
+      <br />
+      <strong>Админка</strong>
+      <br />
+      <sub>Статистика по открытиям, играм и скидкам плюс ручная деактивация по username.</sub>
+    </td>
+  </tr>
+</table>
 
-```text
-backend/
-frontend/
-docker-compose.yml
-docker-compose.prod.yml
-.env.example
-README.md
-Makefile
+## Что Это
+
+Nexx Telegram Mini App состоит из трех частей:
+
+- `backend/` на `FastAPI` выдает API, хранит игры и скидки, валидирует Telegram `initData`.
+- `frontend/` на `Next.js` отрисовывает игру, профиль и админку в mobile-first формате.
+- `backend/bot/` на `aiogram` открывает Mini App через `/start` и WebApp-кнопки.
+
+Пользователь приходит из Telegram, открывает 3x3 поле, ловит совпадение процентов и получает персональную скидку на аренду игровой комнаты Nexx.
+
+## Ключевые Возможности
+
+- Telegram-бот с `/start`, приветствием и `WebAppInfo` кнопкой для входа в Mini App.
+- Игровое поле `3x3`, где раскладка процентов хранится только на backend.
+- Один приз на пользователя: после успешной пары игра блокируется, а скидка сохраняется в базе.
+- Профиль со статусом и параметрами выданной скидки.
+- Админка со сводной аналитикой, распределением скидок и деактивацией по username.
+- Локальный dev-режим через `dev-local` для запуска Mini App вне Telegram.
+
+## Архитектура
+
+```mermaid
+flowchart LR
+    TG[Пользователь в Telegram] --> BOT[aiogram bot]
+    BOT -->|WebApp button| FE[Next.js Mini App]
+    FE -->|X-Telegram-Init-Data| API[FastAPI API]
+    API --> DB[(SQLite)]
+    ADMIN[Администратор] --> FE
 ```
 
-## Быстрый старт через Docker
+## Стек
 
-1. Создайте рабочий `.env`:
+| Слой | Технологии |
+| --- | --- |
+| Frontend | `Next.js 15`, `React 19`, `TypeScript`, `Tailwind CSS`, `Framer Motion` |
+| Backend API | `FastAPI`, `SQLAlchemy 2.0`, `Pydantic 2`, `Alembic` |
+| Bot | `aiogram 3` |
+| Data | `SQLite` в `backend/data/nexx_game.sqlite3` |
+| Infra | `Docker`, `Docker Compose`, `Makefile` |
+
+## Быстрый Старт
+
+1. Создайте `.env` из шаблона:
 
 ```bash
 cp .env.example .env
@@ -35,37 +101,19 @@ cp .env.example .env
 - `API_URL`
 - `NEXT_PUBLIC_API_URL`
 - `ADMIN_TG_IDS`
+- `JWT_SECRET`
 
-3. Запустите весь проект:
+3. Поднимите проект:
 
 ```bash
 docker compose up --build
 ```
 
-Сервисы:
+После запуска:
 
-- `backend-api` на `http://localhost:8000`
-- `frontend` на `http://localhost:2023`
+- `backend-api` доступен на `http://localhost:8000`
+- `frontend` доступен на `http://localhost:2023`
 - `backend-bot` запускается как `python -m bot.main`
-
-SQLite сохраняется между рестартами через volume:
-
-```yaml
-./backend/data:/app/data
-```
-
-## Production compose
-
-```bash
-docker compose -f docker-compose.prod.yml up --build -d
-```
-
-В production frontend запускается через:
-
-```bash
-npm run build
-npm run start
-```
 
 ## Makefile
 
@@ -79,7 +127,9 @@ make build-backend
 make build-frontend
 ```
 
-## Локальный запуск backend
+## Локальная Разработка
+
+### Backend
 
 ```bash
 cd backend
@@ -91,7 +141,7 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-## Локальный запуск бота
+### Bot
 
 ```bash
 cd backend
@@ -99,7 +149,7 @@ source venv/bin/activate
 python -m bot.main
 ```
 
-## Локальный запуск frontend
+### Frontend
 
 ```bash
 cd frontend
@@ -107,155 +157,66 @@ npm install
 npm run dev
 ```
 
-## ENV
+Production-like запуск frontend:
 
-Корневой `.env.example` содержит все основные переменные:
-
-```env
-BOT_TOKEN=telegram_bot_token
-TELEGRAM_BOT_USERNAME=NexxBot
-TELEGRAM_PROXY=
-WEBAPP_URL=https://your-mini-app-domain.com
-API_URL=https://your-api-domain.com
-NEXT_PUBLIC_API_URL=https://your-api-domain.com
-DATABASE_URL=sqlite+aiosqlite:///./data/nexx_game.sqlite3
-ADMIN_TG_IDS=123456789,987654321
-JWT_SECRET=change_me
-APP_ENV=development
-CORS_ORIGINS=http://localhost:2023,https://your-mini-app-domain.com
-DISCOUNT_EXPIRES_DAYS=
+```bash
+npm run build
+npm start
 ```
+
+## Production Compose
+
+```bash
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+## Переменные Окружения
+
+Основные значения лежат в `.env.example`:
+
+| Переменная | Назначение |
+| --- | --- |
+| `BOT_TOKEN` | токен Telegram-бота |
+| `TELEGRAM_BOT_USERNAME` | username бота без `@` |
+| `TELEGRAM_PROXY` | необязательный proxy только для bot traffic |
+| `WEBAPP_URL` | публичный HTTPS URL Mini App |
+| `API_URL` | публичный URL backend API |
+| `NEXT_PUBLIC_API_URL` | URL API для frontend |
+| `DATABASE_URL` | строка подключения к SQLite |
+| `ADMIN_TG_IDS` | Telegram ID администраторов через запятую |
+| `JWT_SECRET` | секрет для backend |
+| `APP_ENV` | `development` или `production` |
+| `CORS_ORIGINS` | разрешенные origins через запятую |
+| `DISCOUNT_EXPIRES_DAYS` | необязательный TTL скидки в днях |
 
 `DISCOUNT_EXPIRES_DAYS` можно оставить пустым. Тогда скидка не истекает автоматически.
 
-`TELEGRAM_PROXY` необязателен. Если он задан, прокси используется только ботом для обращений к Telegram Bot API. Поддерживаются два формата:
+## Игровая Логика
 
-- полный URL, например `http://user:password@host:port`
-- сокращённый формат `host:port:user:password`
+- Размер поля: `3x3`, всего `9` карточек.
+- Игра выдается один раз на пользователя.
+- После нахождения совпадающей пары создается запись в `discounts`.
+- Повторный запуск после выигрыша переводит пользователя в `blocked` состояние.
+- Выигрышный процент выбирается по весам:
 
-## Миграции Alembic
+| Скидка | Вес |
+| --- | ---: |
+| `5%` | `15` |
+| `10%` | `35` |
+| `15%` | `35` |
+| `20%` | `10` |
+| `25%` | `5` |
 
-Локально:
+## Безопасность
 
-```bash
-cd backend
-alembic upgrade head
-```
+- Проценты карточек не уходят на frontend, пока карточка не открыта.
+- Вся раскладка живет на backend и в SQLite.
+- Mini App запросы требуют `X-Telegram-Init-Data`.
+- Telegram auth валидируется на backend через `BOT_TOKEN`.
+- Для локальной разработки поддерживается `dev-local`, если `APP_ENV != production`.
+- На игровые endpoints навешан базовый rate limit.
 
-В Docker:
-
-```bash
-docker compose exec backend-api alembic upgrade head
-```
-
-Первая миграция создаёт таблицы:
-
-- `users`
-- `games`
-- `game_cards`
-- `discounts`
-- `game_moves`
-
-## Где хранится база
-
-- путь в контейнере: `/app/data/nexx_game.sqlite3`
-- путь в проекте: `backend/data/nexx_game.sqlite3`
-
-Папка `backend/data/` создаётся автоматически.
-
-## Настройка Telegram Mini App
-
-1. Создайте бота через BotFather.
-2. Заполните `BOT_TOKEN` и `TELEGRAM_BOT_USERNAME`.
-3. Укажите публичный URL Mini App в `WEBAPP_URL`.
-4. Укажите публичный backend URL в `API_URL` и `NEXT_PUBLIC_API_URL`.
-5. Запустите `backend-bot`.
-6. Откройте бота и отправьте `/start`.
-
-Что делает бот:
-
-- отправляет приветственное сообщение;
-- показывает inline-кнопку `🎁 Получить скидку`;
-- настраивает menu button `Открыть игру` через `WebAppInfo`.
-
-## Как добавить админов
-
-Укажите Telegram ID через запятую:
-
-```env
-ADMIN_TG_IDS=123456789,987654321
-```
-
-Админка доступна только этим пользователям:
-
-- вкладка `Админка` скрыта для остальных;
-- `/admin` на frontend защищён;
-- `/api/admin/*` на backend защищён.
-
-## Логотип
-
-Файл логотипа лежит в:
-
-- `frontend/public/logo.png`
-
-Если нужно заменить логотип, положите новый файл по тому же пути. Интерфейс использует именно изображение, а не текстовую замену.
-
-## Логика игры и скидок
-
-Игровое поле:
-
-- `3x3`, всего `9` карточек;
-- backend хранит полную раскладку в SQLite;
-- frontend получает только безопасное публичное состояние карточек.
-
-Выигрышные вероятности целевой скидки:
-
-- `5%` — `15%`
-- `10%` — `35%`
-- `15%` — `35%`
-- `20%` — `10%`
-- `25%` — `5%`
-
-Статусы игры:
-
-- `not_started`
-- `in_progress`
-- `completed`
-- `blocked`
-
-Статусы скидки:
-
-- `active`
-- `used`
-- `expired`
-
-После нахождения пары:
-
-- создаётся запись в `discounts`;
-- игра завершается;
-- повторно играть нельзя;
-- скидка показывается в профиле.
-
-## Защита от просмотра скрытых карточек
-
-Античит реализован так:
-
-- раскладка процентов хранится только в backend и SQLite;
-- frontend не получает массив процентов всех карточек;
-- закрытые карточки приходят без `revealed_percent`;
-- `POST /api/game/open-card` открывает только конкретную карточку;
-- backend проверяет владельца игры, статус игры, существование карточки и rate limit;
-- все запросы Mini App требуют `X-Telegram-Init-Data`;
-- `initData` валидируется на backend через `BOT_TOKEN`.
-
-Базовый rate limit:
-
-- не более `5` открытий карточек в секунду;
-- не более `20` игровых запросов за `10` секунд.
-
-## API
-
-Основные endpoints:
+## Основные Endpoints
 
 - `GET /api/me`
 - `POST /api/game/start`
@@ -263,45 +224,38 @@ ADMIN_TG_IDS=123456789,987654321
 - `POST /api/game/open-card`
 - `GET /api/discounts/my`
 - `GET /api/admin/stats`
+- `POST /api/admin/users/{user_id}/deactivate-discount`
 - `PATCH /api/admin/discounts/{discount_id}/status`
 
-Если Telegram auth невалидна, backend возвращает:
+## Структура Проекта
 
-```json
-{
-  "error": "Invalid Telegram auth"
-}
+```text
+backend/
+  app/
+  bot/
+  alembic/
+frontend/
+  app/
+  components/
+  public/
+docs/
+  screenshots/
+docker-compose.yml
+docker-compose.prod.yml
+Makefile
+README.md
 ```
 
-## Сборка Docker image
-
-Backend:
+## Docker Images
 
 ```bash
 docker build -t nexx-backend:latest ./backend
-```
-
-Frontend:
-
-```bash
 docker build -t nexx-frontend:latest ./frontend
 ```
 
-## Push Docker image в registry
+## Что Важно Для UI
 
-```bash
-docker tag nexx-backend:latest your-registry/nexx-backend:latest
-docker tag nexx-frontend:latest your-registry/nexx-frontend:latest
-
-docker push your-registry/nexx-backend:latest
-docker push your-registry/nexx-frontend:latest
-```
-
-## Дополнительно
-
-- frontend сделан mobile-first под Telegram WebApp;
-- нижняя навигация фиксирована снизу;
-- UI использует неоновую палитру Nexx;
-- модальное окно правил хранит факт показа в `localStorage`;
-- выигрышное окно ведёт в профиль;
-- backend и bot используют один Dockerfile из `backend/`.
+- интерфейс сделан mobile-first под Telegram WebApp;
+- нижняя навигация фиксирована и рассчитана на большой палец;
+- визуальный стиль строится вокруг неоновой палитры Nexx;
+- игра, профиль и админка используют единый стеклянный дизайн и акцентные градиенты.
